@@ -28,7 +28,7 @@ contract MemoryAccessUtils is MemoryMap {
 
     function getChannelPtr(uint256[] memory ctx) internal pure returns (uint256) {
         uint256 ctxPtr;
-        
+
         assembly {
             ctxPtr := add(ctx, 0x20)
         }
@@ -39,7 +39,7 @@ contract MemoryAccessUtils is MemoryMap {
     function getQueries(uint256[] memory ctx) internal pure returns (uint256[] memory) {
         uint256[] memory queries;
         // Dynamic array holds length followed by values.
-        uint256 offset = 0x20 + 0x20*MM_N_UNIQUE_QUERIES;
+        uint256 offset = 0x20 + 0x20 * MM_N_UNIQUE_QUERIES;
 
         assembly {
             queries := add(ctx, offset)
@@ -54,7 +54,7 @@ contract MemoryAccessUtils is MemoryMap {
 
     function getFriSteps(uint256[] memory ctx) internal pure returns (uint256[] memory friSteps) {
         uint256 friStepsPtr = getPtr(ctx, MM_FRI_STEPS_PTR);
-        
+
         assembly {
             friSteps := mload(friStepsPtr)
         }

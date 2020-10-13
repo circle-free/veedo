@@ -5,6 +5,13 @@
   "repository": "https://github.com/circle-free/veedo.git",
   "author": "StarkWare Industries Ltd",
   "license": "Apache License, Version 2.0",
+  "scripts": {
+    "test": "truffle test",
+    "ganache": "ganache-cli",
+    "lint": "solhint 'contracts/**/*.sol'",
+    "prettier": "prettier --write 'contracts/**/*.sol'",
+    "compile": "yarn truffle compile"
+  },
   "private": false,
   "devDependencies": {
     "prettier": "^2.1.2",

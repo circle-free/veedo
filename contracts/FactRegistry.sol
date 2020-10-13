@@ -6,7 +6,7 @@ import "./IQueryableFactRegistry.sol";
 
 contract FactRegistry is IQueryableFactRegistry {
     // Mapping: fact hash -> true.
-    mapping (bytes32 => bool) private verifiedFact;
+    mapping(bytes32 => bool) private verifiedFact;
 
     // Indicates whether the Fact Registry has at least one fact registered.
     bool anyFactRegistered;
@@ -14,7 +14,7 @@ contract FactRegistry is IQueryableFactRegistry {
     /*
       Checks if a fact has been verified.
     */
-    function isValid(bytes32 fact) external view override returns(bool) {
+    function isValid(bytes32 fact) external view override returns (bool) {
         return verifiedFact[fact];
     }
 
@@ -31,8 +31,7 @@ contract FactRegistry is IQueryableFactRegistry {
     /*
       Indicates whether at least one fact was registered.
     */
-    function hasRegisteredFact() external view override returns(bool) {
+    function hasRegisteredFact() external view override returns (bool) {
         return anyFactRegistered;
     }
-
 }

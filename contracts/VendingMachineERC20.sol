@@ -23,13 +23,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
     // Emitted by addPayment() when a user makes a payment for a randomness.
     event LogNewPayment(uint256 seed, uint256 n_iter, uint256 paymentAmount);
     // Emitted by reclaimPayment() when a user reclaims a payment they made.
-    event LogPaymentReclaimed(
-        address sender,
-        uint256 seed,
-        uint256 n_iter,
-        uint256 tag,
-        uint256 reclaimedAmount
-    );
+    event LogPaymentReclaimed(address sender, uint256 seed, uint256 n_iter, uint256 tag, uint256 reclaimedAmount);
     // Emitted by registerAndCollect() when a new randomness is registered.
     event LogNewRandomness(uint256 seed, uint256 n_iter, bytes32 randomness);
 
@@ -48,8 +42,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
     // Mapping: (sender, seed, n_iters, tag) -> Payment.
     // Information to support reclaiming of payments.
     // 'tag' is used to allow a wrapper contract to distinguish between different users.
-    mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint256 => Payment))))
-        public payments;
+    mapping(address => mapping(uint256 => mapping(uint256 => mapping(uint256 => Payment)))) public payments;
     // Mapping: (seed, n_iters) -> randomness.
     mapping(uint256 => mapping(uint256 => bytes32)) public registeredRandomness;
     // Mapping: address -> isOwner.
@@ -70,10 +63,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
     }
 
     modifier randomnessNotRegistered(uint256 seed, uint256 n_iter) {
-        require(
-            registeredRandomness[seed][n_iter] == 0,
-            "REGISTERED_RANDOMNESS"
-        );
+        require(registeredRandomness[seed][n_iter] == 0, "REGISTERED_RANDOMNESS");
         _;
     }
 
@@ -141,13 +131,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
         // Send the payment back to the user.
         transferOut(userPayment.amount);
 
-        emit LogPaymentReclaimed(
-            msg.sender,
-            seed,
-            n_iter,
-            tag,
-            userPayment.amount
-        );
+        emit LogPaymentReclaimed(msg.sender, seed, n_iter, tag, userPayment.amount);
     }
 
     function registerAndCollect(
@@ -181,20 +165,11 @@ contract VendingMachineERC20 is PublicInputOffsets {
         proofPublicInput[OFFSET_VDF_OUTPUT_X] = vdfOutputX;
         proofPublicInput[OFFSET_VDF_OUTPUT_Y] = vdfOutputY;
 
-        require(
-            verifierContract.isValid(
-                keccak256(abi.encodePacked(proofPublicInput))
-            ),
-            "FACT_NOT_REGISTERED"
-        );
+        require(verifierContract.isValid(keccak256(abi.encodePacked(proofPublicInput))), "FACT_NOT_REGISTERED");
 
         // The randomness is the hash of the VDF output and the string "veedo".
         bytes32 randomness = keccak256(
-            abi.encodePacked(
-                proofPublicInput[OFFSET_VDF_OUTPUT_X],
-                proofPublicInput[OFFSET_VDF_OUTPUT_Y],
-                "veedo"
-            )
+            abi.encodePacked(proofPublicInput[OFFSET_VDF_OUTPUT_X], proofPublicInput[OFFSET_VDF_OUTPUT_Y], "veedo")
         );
         registeredRandomness[seed][n_iter] = randomness;
 
@@ -205,14 +180,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
       Transfers funds from the contract to msg.sender.
     */
     function transferOut(uint256 amount) internal {
-        safeERC20Call(
-            address(tokenAddress),
-            abi.encodeWithSelector(
-                IERC20(0).transfer.selector,
-                msg.sender,
-                amount
-            )
-        );
+        safeERC20Call(address(tokenAddress), abi.encodeWithSelector(IERC20(0).transfer.selector, msg.sender, amount));
     }
 
     /*
@@ -221,12 +189,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
     function transferIn(uint256 amount) internal {
         safeERC20Call(
             address(tokenAddress),
-            abi.encodeWithSelector(
-                IERC20(0).transferFrom.selector,
-                msg.sender,
-                address(this),
-                amount
-            )
+            abi.encodeWithSelector(IERC20(0).transferFrom.selector, msg.sender, address(this), amount)
         );
     }
 
@@ -249,11 +212,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
     /*
       Generates VDF inputs from seed.
     */
-    function seed2vdfInput(uint256 seed)
-        public
-        pure
-        returns (uint256, uint256)
-    {
+    function seed2vdfInput(uint256 seed) public pure returns (uint256, uint256) {
         uint256 vdfInput = uint256(keccak256(abi.encodePacked(seed, "veedo")));
         uint256 vdfInputX = vdfInput & ((1 << 125) - 1);
         uint256 vdfInputY = ((vdfInput >> 125) & ((1 << 125) - 1));

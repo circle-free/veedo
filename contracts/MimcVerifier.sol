@@ -27,7 +27,7 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         constraintPoly = MimcConstraintPoly(auxPolynomials[0]);
 
         for (uint256 i = 0; i < 20; i++) {
-            constantsCols[i] = PeriodicColumnContract(auxPolynomials[i+1]);
+            constantsCols[i] = PeriodicColumnContract(auxPolynomials[i + 1]);
         }
 
         oodsContractAddress = address(oodsContract);
@@ -47,7 +47,7 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         uint256[] calldata publicInput
     ) external {
         verifyProof(proofParams, proof, publicInput);
-        
+
         registerFact(
             keccak256(
                 abi.encodePacked(
@@ -93,9 +93,12 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         return N_OODS_COEFFICIENTS;
     }
 
-    function airSpecificInit(
-        uint256[] memory publicInput
-    ) internal pure override returns (uint256[] memory ctx, uint256 logTraceLength) {
+    function airSpecificInit(uint256[] memory publicInput)
+        internal
+        pure
+        override
+        returns (uint256[] memory ctx, uint256 logTraceLength)
+    {
         require(publicInput.length == PUBLIC_INPUT_SIZE, "INVALID_PUBLIC_INPUT_LENGTH");
 
         ctx = new uint256[](MM_CONTEXT_SIZE);
@@ -119,14 +122,16 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
     }
 
     function getPublicInputHash(uint256[] memory publicInput) internal pure override returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                uint64(2 ** publicInput[OFFSET_LOG_TRACE_LENGTH]),
-                publicInput[OFFSET_VDF_OUTPUT_X],
-                publicInput[OFFSET_VDF_OUTPUT_Y],
-                publicInput[OFFSET_VDF_INPUT_X],
-                publicInput[OFFSET_VDF_INPUT_Y])
-        );
+        return
+            keccak256(
+                abi.encodePacked(
+                    uint64(2**publicInput[OFFSET_LOG_TRACE_LENGTH]),
+                    publicInput[OFFSET_VDF_OUTPUT_X],
+                    publicInput[OFFSET_VDF_OUTPUT_Y],
+                    publicInput[OFFSET_VDF_INPUT_X],
+                    publicInput[OFFSET_VDF_INPUT_Y]
+                )
+            );
     }
 
     /*
@@ -173,8 +178,8 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
             let p := mload(0x40)
 
             if iszero(staticcall(not(0), lconstraintPoly, add(ctx, offset), size, p, 0x20)) {
-              returndatacopy(0, 0, returndatasize())
-              revert(0, returndatasize())
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
 
             compositionFromTraceValue := mload(p)
@@ -182,11 +187,9 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
 
         uint256 claimedComposition = fadd(
             ctx[MM_OODS_VALUES + MASK_SIZE],
-            fmul(oodsPoint, ctx[MM_OODS_VALUES + MASK_SIZE + 1]));
-
-        require(
-            compositionFromTraceValue == claimedComposition,
-            "claimedComposition does not match trace"
+            fmul(oodsPoint, ctx[MM_OODS_VALUES + MASK_SIZE + 1])
         );
+
+        require(compositionFromTraceValue == claimedComposition, "claimedComposition does not match trace");
     }
 }

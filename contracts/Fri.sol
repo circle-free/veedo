@@ -14,20 +14,20 @@ import "./HornerEvaluator.sol";
 contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
     // event LogGas(string name, uint256 val);
 
-    function verifyLastLayer(uint256[] memory ctx, uint256 nPoints)
-        internal {
+    function verifyLastLayer(uint256[] memory ctx, uint256 nPoints) internal {
         uint256 friLastLayerDegBound = ctx[MM_FRI_LAST_LAYER_DEG_BOUND];
         uint256 groupOrderMinusOne = friLastLayerDegBound * ctx[MM_BLOW_UP_FACTOR] - 1;
         uint256 coefsStart = ctx[MM_FRI_LAST_LAYER_PTR];
 
         for (uint256 i = 0; i < nPoints; i++) {
-            uint256 point = ctx[MM_FRI_QUEUE + 3*i + 2];
+            uint256 point = ctx[MM_FRI_QUEUE + 3 * i + 2];
             // Invert point using inverse(point) == fpow(point, ord(point) - 1).
 
             point = fpow(point, groupOrderMinusOne);
             require(
-                hornerEval(coefsStart, point, friLastLayerDegBound) == ctx[MM_FRI_QUEUE + 3*i + 1],
-                "Bad Last layer value.");
+                hornerEval(coefsStart, point, friLastLayerDegBound) == ctx[MM_FRI_QUEUE + 3 * i + 1],
+                "Bad Last layer value."
+            );
         }
     }
 
@@ -67,21 +67,27 @@ contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
         //
         // The values in the proof are already multiplied by MontgomeryR,
         // but the inputs from the OODS oracle need to be fixed.
-        for (uint256 i = 0; i < nLiveQueries; i++ ) {
-            ctx[MM_FRI_QUEUE + 3*i + 1] = fmul(ctx[MM_FRI_QUEUE + 3*i + 1], K_MONTGOMERY_R);
+        for (uint256 i = 0; i < nLiveQueries; i++) {
+            ctx[MM_FRI_QUEUE + 3 * i + 1] = fmul(ctx[MM_FRI_QUEUE + 3 * i + 1], K_MONTGOMERY_R);
         }
 
         uint256 friQueue = getPtr(ctx, MM_FRI_QUEUE);
 
         uint256[] memory friSteps = getFriSteps(ctx);
         uint256 nFriSteps = friSteps.length;
-        
+
         while (friStep < nFriSteps) {
             uint256 friCosetSize = 2**friSteps[friStep];
 
             nLiveQueries = computeNextLayer(
-                channelPtr, friQueue, merkleQueuePtr, nLiveQueries,
-                ctx[MM_FRI_EVAL_POINTS + friStep], friCosetSize, friCtx);
+                channelPtr,
+                friQueue,
+                merkleQueuePtr,
+                nLiveQueries,
+                ctx[MM_FRI_EVAL_POINTS + friStep],
+                friCosetSize,
+                friCtx
+            );
 
             // emit LogGas(
             //     string(abi.encodePacked("FRI layer ", bytes1(uint8(48 + friStep)))), gasleft());
@@ -89,9 +95,7 @@ contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
             // Layer is done, verify the current layer and move to next layer.
             // ctx[mmMerkleQueue: merkleQueueIdx) holds the indices
             // and values of the merkle leaves that need verification.
-            verify(
-                channelPtr, merkleQueuePtr, bytes32(ctx[MM_FRI_COMMITMENTS + friStep - 1]),
-                nLiveQueries);
+            verify(channelPtr, merkleQueuePtr, bytes32(ctx[MM_FRI_COMMITMENTS + friStep - 1]), nLiveQueries);
 
             // emit LogGas(
             //     string(abi.encodePacked("Merkle of FRI layer ", bytes1(uint8(48 + friStep)))),

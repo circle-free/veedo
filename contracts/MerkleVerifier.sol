@@ -5,9 +5,9 @@ pragma solidity <=0.7.3;
 // import "./IMerkleVerifier.sol";
 
 contract MerkleVerifier {
-    uint256 constant internal MAX_N_MERKLE_VERIFIER_QUERIES =  128;
+    uint256 internal constant MAX_N_MERKLE_VERIFIER_QUERIES = 128;
 
-    function getHashMask() internal pure returns(uint256) {
+    function getHashMask() internal pure returns (uint256) {
         // Default implementation.
         return 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
     }
@@ -47,7 +47,11 @@ contract MerkleVerifier {
             let proofPtr := mload(channelPtr)
 
             // while(index > 1).
-            for { } gt(index, 1) { } {
+            for {
+
+            } gt(index, 1) {
+
+            } {
                 let siblingIndex := xor(index, 1)
                 // siblingOffset := 0x20 * lsb(siblingIndex).
                 let siblingOffset := mulmod(siblingIndex, 0x20, 0x40)

@@ -2,7 +2,6 @@
 
 pragma solidity <=0.7.3;
 
-
 contract PrimeFieldElement6 {
     uint256 internal constant K_MODULUS = 0x30000003000000010000000000000001;
     uint256 internal constant K_MODULUS_MASK = 0x3fffffffffffffffffffffffffffffff;
@@ -15,11 +14,7 @@ contract PrimeFieldElement6 {
     function fromMontgomery(uint256 val) internal pure returns (uint256 res) {
         // uint256 res = fmul(val, kMontgomeryRInv);
         assembly {
-            res := mulmod(
-                val,
-                0x9000001200000096000000600000001,
-                0x30000003000000010000000000000001
-            )
+            res := mulmod(val, 0x9000001200000096000000600000001, 0x30000003000000010000000000000001)
         }
         return res;
     }
@@ -34,11 +29,7 @@ contract PrimeFieldElement6 {
     function toMontgomeryInt(uint256 val) internal pure returns (uint256 res) {
         //uint256 res = fmul(val, kMontgomeryR);
         assembly {
-            res := mulmod(
-                val,
-                0xffffff0fffffffafffffffffffffffb,
-                0x30000003000000010000000000000001
-            )
+            res := mulmod(val, 0xffffff0fffffffafffffffffffffffb, 0x30000003000000010000000000000001)
         }
         return res;
     }
@@ -62,11 +53,7 @@ contract PrimeFieldElement6 {
     function fsub(uint256 a, uint256 b) internal pure returns (uint256 res) {
         // uint256 res = addmod(a, kModulus - b, kModulus);
         assembly {
-            res := addmod(
-                a,
-                sub(0x30000003000000010000000000000001, b),
-                0x30000003000000010000000000000001
-            )
+            res := addmod(a, sub(0x30000003000000010000000000000001, b), 0x30000003000000010000000000000001)
         }
         return res;
     }

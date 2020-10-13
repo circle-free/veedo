@@ -46,25 +46,28 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
     event LogDebug(uint256 val);
     address oodsContractAddress;
 
-    function airSpecificInit(uint256[] memory publicInput) internal virtual returns (uint256[] memory ctx, uint256 logTraceLength);
+    function airSpecificInit(uint256[] memory publicInput)
+        internal
+        virtual
+        returns (uint256[] memory ctx, uint256 logTraceLength);
 
-    uint256 constant internal PROOF_PARAMS_N_QUERIES_OFFSET = 0;
-    uint256 constant internal PROOF_PARAMS_LOG_BLOWUP_FACTOR_OFFSET = 1;
-    uint256 constant internal PROOF_PARAMS_PROOF_OF_WORK_BITS_OFFSET = 2;
-    uint256 constant internal PROOF_PARAMS_FRI_LAST_LAYER_DEG_BOUND_OFFSET = 3;
-    uint256 constant internal PROOF_PARAMS_N_FRI_STEPS_OFFSET = 4;
-    uint256 constant internal PROOF_PARAMS_FRI_STEPS_OFFSET = 5;
+    uint256 internal constant PROOF_PARAMS_N_QUERIES_OFFSET = 0;
+    uint256 internal constant PROOF_PARAMS_LOG_BLOWUP_FACTOR_OFFSET = 1;
+    uint256 internal constant PROOF_PARAMS_PROOF_OF_WORK_BITS_OFFSET = 2;
+    uint256 internal constant PROOF_PARAMS_FRI_LAST_LAYER_DEG_BOUND_OFFSET = 3;
+    uint256 internal constant PROOF_PARAMS_N_FRI_STEPS_OFFSET = 4;
+    uint256 internal constant PROOF_PARAMS_FRI_STEPS_OFFSET = 5;
 
     function validateFriParams(
         uint256[] memory friSteps,
         uint256 logTraceLength,
         uint256 logFriLastLayerDegBound
     ) internal pure {
-        require (friSteps[0] == 0, "Only eta0 == 0 is currently supported");
+        require(friSteps[0] == 0, "Only eta0 == 0 is currently supported");
 
         uint256 expectedLogDegBound = logFriLastLayerDegBound;
         uint256 nFriSteps = friSteps.length;
-        
+
         for (uint256 i = 1; i < nFriSteps; i++) {
             uint256 friStep = friSteps[i];
             require(friStep > 0, "Only the first fri step can be 0");
@@ -75,35 +78,35 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
         // FRI starts with a polynomial of degree 'traceLength'.
         // After applying all the FRI steps we expect to get a polynomial of degree less
         // than friLastLayerDegBound.
-        require (expectedLogDegBound == logTraceLength, "Fri params do not match trace length");
+        require(expectedLogDegBound == logTraceLength, "Fri params do not match trace length");
     }
 
-    function initVerifierParams(
-        uint256[] memory publicInput,
-        uint256[] memory proofParams
-    ) internal returns (uint256[] memory ctx) {
-        require (proofParams.length > PROOF_PARAMS_FRI_STEPS_OFFSET, "Invalid proofParams.");
+    function initVerifierParams(uint256[] memory publicInput, uint256[] memory proofParams)
+        internal
+        returns (uint256[] memory ctx)
+    {
+        require(proofParams.length > PROOF_PARAMS_FRI_STEPS_OFFSET, "Invalid proofParams.");
 
-        require (
+        require(
             proofParams.length == (PROOF_PARAMS_FRI_STEPS_OFFSET + proofParams[PROOF_PARAMS_N_FRI_STEPS_OFFSET]),
             "Invalid proofParams."
         );
-            
+
         uint256 logBlowupFactor = proofParams[PROOF_PARAMS_LOG_BLOWUP_FACTOR_OFFSET];
-        require (logBlowupFactor <= 16, "logBlowupFactor must be at most 16");
-        require (logBlowupFactor >= 1, "logBlowupFactor must be at least 1");
+        require(logBlowupFactor <= 16, "logBlowupFactor must be at most 16");
+        require(logBlowupFactor >= 1, "logBlowupFactor must be at least 1");
 
         uint256 proofOfWorkBits = proofParams[PROOF_PARAMS_PROOF_OF_WORK_BITS_OFFSET];
-        require (proofOfWorkBits <= 50, "proofOfWorkBits must be at most 50");
-        require (proofOfWorkBits >= minProofOfWorkBits, "minimum proofOfWorkBits not satisfied");
-        require (proofOfWorkBits < numSecurityBits, "Proofs may not be purely based on PoW.");
+        require(proofOfWorkBits <= 50, "proofOfWorkBits must be at most 50");
+        require(proofOfWorkBits >= minProofOfWorkBits, "minimum proofOfWorkBits not satisfied");
+        require(proofOfWorkBits < numSecurityBits, "Proofs may not be purely based on PoW.");
 
         uint256 logFriLastLayerDegBound = proofParams[PROOF_PARAMS_FRI_LAST_LAYER_DEG_BOUND_OFFSET];
-        require (logFriLastLayerDegBound <= 10, "logFriLastLayerDegBound must be at most 10.");
+        require(logFriLastLayerDegBound <= 10, "logFriLastLayerDegBound must be at most 10.");
 
         uint256 nFriSteps = proofParams[PROOF_PARAMS_N_FRI_STEPS_OFFSET];
-        require (nFriSteps <= 10, "Too many fri steps.");
-        require (nFriSteps > 1, "Not enough fri steps.");
+        require(nFriSteps <= 10, "Too many fri steps.");
+        require(nFriSteps > 1, "Not enough fri steps.");
 
         uint256[] memory friSteps = new uint256[](nFriSteps);
         for (uint256 i = 0; i < nFriSteps; i++) {
@@ -120,18 +123,18 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
         assembly {
             mstore(friStepsPtr, friSteps)
         }
-        
+
         ctx[MM_FRI_LAST_LAYER_DEG_BOUND] = 2**logFriLastLayerDegBound;
-        ctx[MM_TRACE_LENGTH] = 2 ** logTraceLength;
+        ctx[MM_TRACE_LENGTH] = 2**logTraceLength;
 
         ctx[MM_BLOW_UP_FACTOR] = 2**logBlowupFactor;
         ctx[MM_PROOF_OF_WORK_BITS] = proofOfWorkBits;
 
         uint256 nQueries = proofParams[PROOF_PARAMS_N_QUERIES_OFFSET];
-        require (nQueries > 0, "Number of queries must be at least one");
-        require (nQueries <= MAX_N_QUERIES, "Too many queries.");
-        
-        require (
+        require(nQueries > 0, "Number of queries must be at least one");
+        require(nQueries <= MAX_N_QUERIES, "Too many queries.");
+
+        require(
             nQueries * logBlowupFactor + proofOfWorkBits >= numSecurityBits,
             "Proof params do not satisfy security requirements."
         );
@@ -152,21 +155,21 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
 
     function oodsConsistencyCheck(uint256[] memory ctx) internal virtual;
 
-    function getNColumnsInTrace() internal pure virtual returns(uint256);
+    function getNColumnsInTrace() internal pure virtual returns (uint256);
 
-    function getNColumnsInComposition() internal pure virtual returns(uint256);
+    function getNColumnsInComposition() internal pure virtual returns (uint256);
 
-    function getMmCoefficients() internal pure virtual returns(uint256);
+    function getMmCoefficients() internal pure virtual returns (uint256);
 
-    function getMmOodsValues() internal pure virtual returns(uint256);
+    function getMmOodsValues() internal pure virtual returns (uint256);
 
-    function getMmOodsCoefficients() internal pure virtual returns(uint256);
+    function getMmOodsCoefficients() internal pure virtual returns (uint256);
 
-    function getNCoefficients() internal pure virtual returns(uint256);
+    function getNCoefficients() internal pure virtual returns (uint256);
 
-    function getNOodsValues() internal pure virtual returns(uint256);
+    function getNOodsValues() internal pure virtual returns (uint256);
 
-    function getNOodsCoefficients() internal pure virtual returns(uint256);
+    function getNOodsCoefficients() internal pure virtual returns (uint256);
 
     function hashRow(
         uint256[] memory ctx,
@@ -214,35 +217,29 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
                 // Finally, we use div to align the result to the right.
                 res := value
                 // Swap 1 bit chunks.
-                res := or(mul(and(res, 0x5555555555555555), 0x4),
-                        and(res, 0xaaaaaaaaaaaaaaaa))
+                res := or(mul(and(res, 0x5555555555555555), 0x4), and(res, 0xaaaaaaaaaaaaaaaa))
                 // Swap 2 bit chunks.
-                res := or(mul(and(res, 0x6666666666666666), 0x10),
-                        and(res, 0x19999999999999998))
+                res := or(mul(and(res, 0x6666666666666666), 0x10), and(res, 0x19999999999999998))
                 // Swap 4 bit chunks.
-                res := or(mul(and(res, 0x7878787878787878), 0x100),
-                        and(res, 0x78787878787878780))
+                res := or(mul(and(res, 0x7878787878787878), 0x100), and(res, 0x78787878787878780))
                 // Swap 8 bit chunks.
-                res := or(mul(and(res, 0x7f807f807f807f80), 0x10000),
-                        and(res, 0x7f807f807f807f8000))
+                res := or(mul(and(res, 0x7f807f807f807f80), 0x10000), and(res, 0x7f807f807f807f8000))
                 // Swap 16 bit chunks.
-                res := or(mul(and(res, 0x7fff80007fff8000), 0x100000000),
-                        and(res, 0x7fff80007fff80000000))
+                res := or(mul(and(res, 0x7fff80007fff8000), 0x100000000), and(res, 0x7fff80007fff80000000))
                 // Swap 32 bit chunks.
-                res := or(mul(and(res, 0x7fffffff80000000), 0x10000000000000000),
-                        and(res, 0x7fffffff8000000000000000))
+                res := or(mul(and(res, 0x7fffffff80000000), 0x10000000000000000), and(res, 0x7fffffff8000000000000000))
                 // Right align the result.
                 res := div(res, exp(2, sub(127, numberOfBits)))
             }
 
             function expmod(base, exponent, modulus) -> res {
                 let p := mload(0x40)
-                mstore(p, 0x20)                 // Length of Base.
-                mstore(add(p, 0x20), 0x20)      // Length of Exponent.
-                mstore(add(p, 0x40), 0x20)      // Length of Modulus.
-                mstore(add(p, 0x60), base)      // Base.
-                mstore(add(p, 0x80), exponent)  // Exponent.
-                mstore(add(p, 0xa0), modulus)   // Modulus.
+                mstore(p, 0x20) // Length of Base.
+                mstore(add(p, 0x20), 0x20) // Length of Exponent.
+                mstore(add(p, 0x40), 0x20) // Length of Modulus.
+                mstore(add(p, 0x60), base) // Base.
+                mstore(add(p, 0x80), exponent) // Exponent.
+                mstore(add(p, 0xa0), modulus) // Modulus.
 
                 // Call modexp precompile.
                 if iszero(call(not(0), 0x05, 0, p, 0xc0, p, 0x20)) {
@@ -254,17 +251,19 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
 
             let PRIME := 0x30000003000000010000000000000001
 
-            for {} lt(friQueue, friQueueEnd) {friQueue := add(friQueue, 0x60)} {
+            for {
+
+            } lt(friQueue, friQueueEnd) {
+                friQueue := add(friQueue, 0x60)
+            } {
                 let queryIdx := mload(friQueue)
                 // Adjust queryIdx, see comment in function description.
                 let adjustedQueryIdx := add(queryIdx, evalDomainSize)
                 mstore(friQueue, adjustedQueryIdx)
 
                 // Compute the evaluation point corresponding to the current queryIdx.
-                mstore(evalPointsPtr, expmod(evalDomainGenerator,
-                                             bitReverse(queryIdx, log_evalDomainSize),
-                                             PRIME))
-                
+                mstore(evalPointsPtr, expmod(evalDomainGenerator, bitReverse(queryIdx, log_evalDomainSize), PRIME))
+
                 evalPointsPtr := add(evalPointsPtr, 0x20)
             }
         }
@@ -290,9 +289,13 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
             let proofPtr := mload(channelPtr)
             let merklePtr := merkleQueuePtr
 
-            for {} lt(friQueue, friQueueEnd) {friQueue := add(friQueue, 0x60)} {
+            for {
+
+            } lt(friQueue, friQueueEnd) {
+                friQueue := add(friQueue, 0x60)
+            } {
                 let merkleLeaf := and(keccak256(proofPtr, rowSize), lhashMask)
-                
+
                 if eq(rowSize, 0x20) {
                     // If a leaf contains only 1 field element we don't hash it.
                     merkleLeaf := mload(proofPtr)
@@ -305,9 +308,11 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
 
                 // Copy query responses to proofData array.
                 // This array will be sent to the OODS contract.
-                for {let proofDataChunk_end := add(proofPtr, rowSize)}
-                        lt(proofPtr, proofDataChunk_end)
-                        {proofPtr := add(proofPtr, 0x20)} {
+                for {
+                    let proofDataChunk_end := add(proofPtr, rowSize)
+                } lt(proofPtr, proofDataChunk_end) {
+                    proofPtr := add(proofPtr, 0x20)
+                } {
                     mstore(proofDataPtr, mload(proofPtr))
                     proofDataPtr := add(proofDataPtr, 0x20)
                 }
@@ -333,20 +338,26 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
         adjustQueryIndicesAndPrepareEvalPoints(ctx);
         // emit LogGas("Prepare evaluation points", gasleft());
         readQueryResponsesAndDecommit(
-            ctx, getNColumnsInTrace(), getPtr(ctx, MM_TRACE_QUERY_RESPONSES),
-            bytes32(ctx[MM_TRACE_COMMITMENT]));
+            ctx,
+            getNColumnsInTrace(),
+            getPtr(ctx, MM_TRACE_QUERY_RESPONSES),
+            bytes32(ctx[MM_TRACE_COMMITMENT])
+        );
         // emit LogGas("Read and decommit trace", gasleft());
 
         readQueryResponsesAndDecommit(
-            ctx, getNColumnsInComposition(), getPtr(ctx, MM_COMPOSITION_QUERY_RESPONSES),
-            bytes32(ctx[MM_OODS_COMMITMENT]));
+            ctx,
+            getNColumnsInComposition(),
+            getPtr(ctx, MM_COMPOSITION_QUERY_RESPONSES),
+            bytes32(ctx[MM_OODS_COMMITMENT])
+        );
 
         // emit LogGas("Read and decommit composition", gasleft());
 
         address oodsAddress = oodsContractAddress;
         uint256 friQueue = getPtr(ctx, MM_FRI_QUEUE);
         uint256 returnDataSize = MAX_N_QUERIES * 0x60;
-        
+
         assembly {
             // Call the OODS contract.
             // mul(add(mload(ctx), 1), 0x20) is sizeof(ctx)
@@ -382,8 +393,11 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
             // Make sure all the values are valid field elements.
             let length := mul(friLastLayerDegBound, 0x20)
             let lastLayerEnd := add(lastLayerPtr, length)
-            for { let coefsPtr := lastLayerPtr } lt(coefsPtr, lastLayerEnd)
-                { coefsPtr := add(coefsPtr, 0x20) } {
+            for {
+                let coefsPtr := lastLayerPtr
+            } lt(coefsPtr, lastLayerEnd) {
+                coefsPtr := add(coefsPtr, 0x20)
+            } {
                 badInput := or(badInput, gt(mload(coefsPtr), primeMinusOne))
             }
 
@@ -418,13 +432,12 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
         uint256[] memory ctx = initVerifierParams(publicInput, proofParams);
         uint256 channelPtr = getChannelPtr(ctx);
 
-        initChannel(channelPtr,  getProofPtr(proof), getPublicInputHash(publicInput));
+        initChannel(channelPtr, getProofPtr(proof), getPublicInputHash(publicInput));
         // emit LogGas("Initializations", gasleft());
 
         // Read trace commitment.
         ctx[MM_TRACE_COMMITMENT] = uint256(readHash(channelPtr, true));
-        VerifierChannel.sendFieldElements(
-            channelPtr, getNCoefficients(), getPtr(ctx, getMmCoefficients()));
+        VerifierChannel.sendFieldElements(channelPtr, getNCoefficients(), getPtr(ctx, getMmCoefficients()));
         // emit LogGas("Generate coefficients", gasleft());
 
         ctx[MM_OODS_COMMITMENT] = uint256(readHash(channelPtr, true));
@@ -434,14 +447,13 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
 
         // Read the answers to the Out of Domain Sampling.
         uint256 lmmOodsValues = getMmOodsValues();
-        for (uint256 i = lmmOodsValues; i < lmmOodsValues+getNOodsValues(); i++) {
+        for (uint256 i = lmmOodsValues; i < lmmOodsValues + getNOodsValues(); i++) {
             ctx[i] = VerifierChannel.readFieldElement(channelPtr, true);
         }
         // emit LogGas("Read OODS commitments", gasleft());
         oodsConsistencyCheck(ctx);
         // emit LogGas("OODS consistency check", gasleft());
-        VerifierChannel.sendFieldElements(
-            channelPtr, getNOodsCoefficients(), getPtr(ctx, getMmOodsCoefficients()));
+        VerifierChannel.sendFieldElements(channelPtr, getNOodsCoefficients(), getPtr(ctx, getMmOodsCoefficients()));
         // emit LogGas("Generate OODS coefficients", gasleft());
         ctx[MM_FRI_COMMITMENTS] = uint256(VerifierChannel.readHash(channelPtr, true));
 
@@ -453,8 +465,7 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
         }
 
         // Send last random FRI evaluation point.
-        VerifierChannel.sendFieldElements(
-            channelPtr, 1, getPtr(ctx, MM_FRI_EVAL_POINTS + nFriSteps - 1));
+        VerifierChannel.sendFieldElements(channelPtr, 1, getPtr(ctx, MM_FRI_EVAL_POINTS + nFriSteps - 1));
 
         // Read FRI last layer commitment.
         readLastFriLayer(ctx);
@@ -463,8 +474,12 @@ abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel
         // emit LogGas("Read FRI commitments", gasleft());
         VerifierChannel.verifyProofOfWork(channelPtr, ctx[MM_PROOF_OF_WORK_BITS]);
         ctx[MM_N_UNIQUE_QUERIES] = VerifierChannel.sendRandomQueries(
-            channelPtr, ctx[MM_N_UNIQUE_QUERIES], ctx[MM_EVAL_DOMAIN_SIZE] - 1,
-            getPtr(ctx, MM_FRI_QUEUE), 0x60);
+            channelPtr,
+            ctx[MM_N_UNIQUE_QUERIES],
+            ctx[MM_EVAL_DOMAIN_SIZE] - 1,
+            getPtr(ctx, MM_FRI_QUEUE),
+            0x60
+        );
         // emit LogGas("Send queries", gasleft());
 
         computeFirstFriLayer(ctx);

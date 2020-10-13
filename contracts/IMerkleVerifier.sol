@@ -7,7 +7,6 @@ interface IMerkleVerifier {
         uint256 channelPtr,
         uint256 queuePtr,
         bytes32 root,
-        uint256 n)
-        external view
-        returns (bytes32 hash);
+        uint256 n
+    ) external view returns (bytes32 hash);
 }

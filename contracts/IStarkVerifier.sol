@@ -3,7 +3,6 @@
 pragma solidity <=0.7.3;
 
 interface IStarkVerifier {
-
     function verifyProof(
         uint256[] memory proofParams,
         uint256[] memory proof,

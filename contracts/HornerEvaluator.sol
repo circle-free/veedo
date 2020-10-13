@@ -26,33 +26,53 @@ contract HornerEvaluator is PrimeFieldElement6 {
 
         assembly {
             let coefsPtr := add(coefsStart, mul(nCoefs, 0x20))
-            for { } gt(coefsPtr, coefsStart) { } {
+            for {
+
+            } gt(coefsPtr, coefsStart) {
+
+            } {
                 // Reduce coefsPtr by 8 field elements.
                 coefsPtr := sub(coefsPtr, 0x100)
 
                 // Apply 4 Horner steps (result := result * point + coef).
-                result :=
-                    add(mload(add(coefsPtr, 0x80)), mulmod(
-                    add(mload(add(coefsPtr, 0xa0)), mulmod(
-                    add(mload(add(coefsPtr, 0xc0)), mulmod(
-                    add(mload(add(coefsPtr, 0xe0)), mulmod(
-                        result,
-                    point, prime)),
-                    point, prime)),
-                    point, prime)),
-                    point, prime))
+                result := add(
+                    mload(add(coefsPtr, 0x80)),
+                    mulmod(
+                        add(
+                            mload(add(coefsPtr, 0xa0)),
+                            mulmod(
+                                add(
+                                    mload(add(coefsPtr, 0xc0)),
+                                    mulmod(add(mload(add(coefsPtr, 0xe0)), mulmod(result, point, prime)), point, prime)
+                                ),
+                                point,
+                                prime
+                            )
+                        ),
+                        point,
+                        prime
+                    )
+                )
 
                 // Apply 4 additional Horner steps.
-                result :=
-                    add(mload(coefsPtr), mulmod(
-                    add(mload(add(coefsPtr, 0x20)), mulmod(
-                    add(mload(add(coefsPtr, 0x40)), mulmod(
-                    add(mload(add(coefsPtr, 0x60)), mulmod(
-                        result,
-                    point, prime)),
-                    point, prime)),
-                    point, prime)),
-                    point, prime))
+                result := add(
+                    mload(coefsPtr),
+                    mulmod(
+                        add(
+                            mload(add(coefsPtr, 0x20)),
+                            mulmod(
+                                add(
+                                    mload(add(coefsPtr, 0x40)),
+                                    mulmod(add(mload(add(coefsPtr, 0x60)), mulmod(result, point, prime)), point, prime)
+                                ),
+                                point,
+                                prime
+                            )
+                        ),
+                        point,
+                        prime
+                    )
+                )
             }
         }
 
