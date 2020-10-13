@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./PrimeFieldElement6.sol";
 
@@ -11,9 +13,11 @@ contract HornerEvaluator is PrimeFieldElement6 {
       a direct pointer.
       The function requires that n is divisible by 8.
     */
-    function hornerEval(uint256 coefsStart, uint256 point, uint256 nCoefs)
-        internal pure
-        returns (uint256) {
+    function hornerEval(
+        uint256 coefsStart,
+        uint256 point,
+        uint256 nCoefs
+    ) internal pure returns (uint256) {
         uint256 result = 0;
         uint256 prime = PrimeFieldElement6.K_MODULUS;
 

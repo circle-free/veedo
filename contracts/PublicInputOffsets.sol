@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 contract PublicInputOffsets {
     // The following constants are offsets of data expected in the public input.

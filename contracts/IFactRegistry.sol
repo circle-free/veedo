@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 /*
   The Fact Registry design pattern is a way to separate cryptographic verification from the
@@ -15,11 +17,9 @@ pragma solidity ^0.5.2;
   For further reading on the Fact Registry design pattern see this
   `StarkWare blog post <https://medium.com/starkware/the-fact-registry-a64aafb598b6>`_.
 */
-contract IFactRegistry {
+interface IFactRegistry {
     /*
       Returns true if the given fact was previously registered in the contract.
     */
-    function isValid(bytes32 fact)
-        external view
-        returns(bool);
+    function isValid(bytes32 fact) external view returns(bool);
 }

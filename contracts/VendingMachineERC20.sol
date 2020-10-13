@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./IFactRegistry.sol";
 import "./IERC20.sol";
@@ -70,12 +72,12 @@ contract VendingMachineERC20 is PublicInputOffsets {
     modifier randomnessNotRegistered(uint256 seed, uint256 n_iter) {
         require(
             registeredRandomness[seed][n_iter] == 0,
-            "REGSITERED_RANDOMNESS"
+            "REGISTERED_RANDOMNESS"
         );
         _;
     }
 
-    constructor(address verifierAddress, address token) public {
+    constructor(address verifierAddress, address token) {
         owners[msg.sender] = true;
         verifierContract = IFactRegistry(verifierAddress);
         tokenAddress = token;
@@ -105,7 +107,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
 
         // Updates mapping.
         payments[msg.sender][seed][n_iter][tag].amount += paymentAmount;
-        payments[msg.sender][seed][n_iter][tag].timeSent = now;
+        payments[msg.sender][seed][n_iter][tag].timeSent = block.timestamp;
         prizes[seed][n_iter] += paymentAmount;
 
         emit LogNewPayment(seed, n_iter, paymentAmount);
@@ -130,7 +132,7 @@ contract VendingMachineERC20 is PublicInputOffsets {
         uint256 releaseTime = lastPaymentTime + RECLAIM_DELAY;
         assert(releaseTime >= RECLAIM_DELAY);
         // solium-disable-next-line security/no-block-members
-        require(now >= releaseTime, "PAYMENT_LOCKED");
+        require(block.timestamp >= releaseTime, "PAYMENT_LOCKED");
 
         // Deduct reclaimed payment from mappings.
         prizes[seed][n_iter] -= userPayment.amount;
@@ -233,13 +235,10 @@ contract VendingMachineERC20 is PublicInputOffsets {
       This is required because many deployed ERC20 contracts don't return a value.
       See https://github.com/ethereum/solidity/issues/4116.
     */
-    function safeERC20Call(address tokenAddress, bytes memory callData)
-        internal
-    {
+    function safeERC20Call(address someTokenAddress, bytes memory callData) internal {
         // solium-disable-next-line security/no-low-level-calls
-        (bool success, bytes memory returndata) = address(tokenAddress).call(
-            callData
-        );
+        (bool success, bytes memory returndata) = address(someTokenAddress).call(callData);
+
         require(success, string(returndata));
 
         if (returndata.length > 0) {

@@ -1,8 +1,10 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 contract MemoryMap {
     /*
-      We store the state of the verifer in a contiguous chunk of memory.
+      We store the state of the verifier in a contiguous chunk of memory.
       The offsets of the different fields are listed below.
       E.g. The offset of the i'th hash is [mm_hashes + i].
     */

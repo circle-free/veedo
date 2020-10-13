@@ -1,8 +1,11 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
 
-import "./IMerkleVerifier.sol";
+pragma solidity <=0.7.3;
 
-contract MerkleVerifier is IMerkleVerifier {
+// import "./IMerkleVerifier.sol";
+
+contract MerkleVerifier {
+    uint256 constant internal MAX_N_MERKLE_VERIFIER_QUERIES =  128;
 
     function getHashMask() internal pure returns(uint256) {
         // Default implementation.
@@ -23,10 +26,8 @@ contract MerkleVerifier is IMerkleVerifier {
         uint256 channelPtr,
         uint256 queuePtr,
         bytes32 root,
-        uint256 n)
-        internal view
-        returns (bytes32 hash)
-    {
+        uint256 n
+    ) internal pure returns (bytes32 hash) {
         uint256 lhashMask = getHashMask();
         require(n <= MAX_N_MERKLE_VERIFIER_QUERIES, "TOO_MANY_MERKLE_QUERIES");
 
@@ -48,13 +49,13 @@ contract MerkleVerifier is IMerkleVerifier {
             // while(index > 1).
             for { } gt(index, 1) { } {
                 let siblingIndex := xor(index, 1)
-                // sibblingOffset := 0x20 * lsb(siblingIndex).
-                let sibblingOffset := mulmod(siblingIndex, 0x20, 0x40)
+                // siblingOffset := 0x20 * lsb(siblingIndex).
+                let siblingOffset := mulmod(siblingIndex, 0x20, 0x40)
 
                 // Store the hash corresponding to index in the correct slot.
                 // 0 if index is even and 0x20 if index is odd.
                 // The hash of the sibling will be written to the other slot.
-                mstore(xor(0x20, sibblingOffset), mload(add(rdIdx, hashesPtr)))
+                mstore(xor(0x20, siblingOffset), mload(add(rdIdx, hashesPtr)))
                 rdIdx := addmod(rdIdx, slotSize, queueSize)
 
                 // Inline channel operation:
@@ -85,7 +86,7 @@ contract MerkleVerifier is IMerkleVerifier {
                     index := mload(add(rdIdx, queuePtr))
                 }
 
-                mstore(sibblingOffset, mload(newHashPtr))
+                mstore(siblingOffset, mload(newHashPtr))
 
                 // Push the new hash to the end of the queue.
                 mstore(add(wrIdx, hashesPtr), and(lhashMask, keccak256(0x00, 0x40)))

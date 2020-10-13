@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./MemoryMap.sol";
 import "./StarkParameters.sol";
@@ -32,9 +34,9 @@ contract MimcOods is MemoryMap, StarkParameters {
             d is the degree of the composition polynomial.
             c is the evaluation sent by the prover.
     */
-    function() external {
-        // This funciton assumes that the calldata contains the context as defined in MemoryMap.sol.
-        // Note that ctx is a variable size array so the first uint256 cell contrains it's length.
+    fallback() external {
+        // This function assumes that the calldata contains the context as defined in MemoryMap.sol.
+        // Note that ctx is a variable size array so the first uint256 cell contains it's length.
         uint256[] memory ctx;
         assembly {
             let ctxSize := mul(add(calldataload(0), 1), 0x20)
@@ -54,7 +56,7 @@ contract MimcOods is MemoryMap, StarkParameters {
             let context := ctx
             let friQueue := /*friQueue*/ add(context, 0xda0)
             let friQueueEnd := add(friQueue,  mul(/*n_unique_queries*/ mload(add(context, 0x120)), 0x60))
-            let traceQueryResponses := /*traceQueryQesponses*/ add(context, 0x3d80)
+            let traceQueryResponses := /*traceQueryResponses*/ add(context, 0x3d80)
 
             let compositionQueryResponses := /*composition_query_responses*/ add(context, 0xb580)
 
@@ -441,7 +443,7 @@ contract MimcOods is MemoryMap, StarkParameters {
       sampling boundary constraints.
 
       Since the friEvalPoints are calculated during the computation of the denominators
-      this function also adds those to the batch inverse in prepartion for the fri that follows.
+      this function also adds those to the batch inverse in preparation for the fri that follows.
 
       After this function returns, the batch_inverse_out array holds #queries
       chunks of size (2 + N_ROWS_IN_MASK) with the following structure:

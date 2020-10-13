@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 contract MimcConstraintPoly {
     // The Memory map during the execution of this contract is as follows:
@@ -64,16 +66,19 @@ contract MimcConstraintPoly {
     // [0x1060, 0x10c0) - adjustments.
     // [0x10c0, 0x1180) - expmod_context.
 
-    function() external {
+    fallback() external {
         uint256 res;
+        
         assembly {
             let PRIME := 0x30000003000000010000000000000001
             // Copy input from calldata to memory.
             calldatacopy(0x0, 0x0, /*Input data size*/ 0xca0)
+
             let point := /*oods_point*/ mload(0x3c0)
             // Initialize composition_degree_bound to 2 * trace_length.
             mstore(0xca0, mul(2, /*trace_length*/ mload(0x2c0)))
-            function expmod(base, exponent, modulus) -> res {
+
+            function expmod(base, exponent, modulus) -> result {
               let p := /*expmod_context*/ 0x10c0
               mstore(p, 0x20)                 // Length of Base.
               mstore(add(p, 0x20), 0x20)      // Length of Exponent.
@@ -81,16 +86,22 @@ contract MimcConstraintPoly {
               mstore(add(p, 0x60), base)      // Base.
               mstore(add(p, 0x80), exponent)  // Exponent.
               mstore(add(p, 0xa0), modulus)   // Modulus.
+
               // Call modexp precompile.
               if iszero(staticcall(not(0), 0x05, p, 0xc0, p, 0x20)) {
                 revert(0, 0)
               }
-              res := mload(p)
+
+              result := mload(p)
             }
 
-            function degreeAdjustment(compositionPolynomialDegreeBound, constraintDegree, numeratorDegree,
-                                       denominatorDegree) -> res {
-              res := sub(sub(compositionPolynomialDegreeBound, 1),
+            function degreeAdjustment(
+              compositionPolynomialDegreeBound,
+              constraintDegree,
+              numeratorDegree,
+              denominatorDegree
+            ) -> result {
+              result := sub(sub(compositionPolynomialDegreeBound, 1),
                          sub(add(constraintDegree, numeratorDegree), denominatorDegree))
             }
 

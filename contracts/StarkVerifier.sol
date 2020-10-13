@@ -1,13 +1,14 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./Fri.sol";
 import "./MemoryMap.sol";
 import "./MemoryAccessUtils.sol";
-import "./IStarkVerifier.sol";
+// import "./IStarkVerifier.sol";
 import "./VerifierChannel.sol";
 
-
-contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkVerifier, Fri {
+abstract contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, Fri {
     /*
       The work required to generate an invalid proof is 2^numSecurityBits.
       Typical values: 80-128.
@@ -15,13 +16,13 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
     uint256 numSecurityBits;
 
     /*
-      The secuirty of a proof is a composition of bits obtained by PoW and bits obtained by FRI
+      The security of a proof is a composition of bits obtained by PoW and bits obtained by FRI
       queries. The verifier requires at least minProofOfWorkBits to be obtained by PoW.
       Typical values: 20-30.
     */
     uint256 minProofOfWorkBits;
 
-    constructor(uint256 numSecurityBits_, uint256 minProofOfWorkBits_) public {
+    constructor(uint256 numSecurityBits_, uint256 minProofOfWorkBits_) {
         numSecurityBits = numSecurityBits_;
         minProofOfWorkBits = minProofOfWorkBits_;
     }
@@ -37,7 +38,7 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
       }
 
       Note that you can't use log in a contract that was called with staticcall
-      (ContraintPoly, Oods,...)
+      (ConstraintPoly, Oods,...)
 
       If logging is needed replace the staticcall to call and add a third argument of 0.
     */
@@ -45,8 +46,7 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
     event LogDebug(uint256 val);
     address oodsContractAddress;
 
-    function airSpecificInit(uint256[] memory publicInput)
-        internal returns (uint256[] memory ctx, uint256 logTraceLength);
+    function airSpecificInit(uint256[] memory publicInput) internal virtual returns (uint256[] memory ctx, uint256 logTraceLength);
 
     uint256 constant internal PROOF_PARAMS_N_QUERIES_OFFSET = 0;
     uint256 constant internal PROOF_PARAMS_LOG_BLOWUP_FACTOR_OFFSET = 1;
@@ -56,12 +56,15 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
     uint256 constant internal PROOF_PARAMS_FRI_STEPS_OFFSET = 5;
 
     function validateFriParams(
-        uint256[] memory friSteps, uint256 logTraceLength, uint256 logFriLastLayerDegBound)
-        internal pure {
+        uint256[] memory friSteps,
+        uint256 logTraceLength,
+        uint256 logFriLastLayerDegBound
+    ) internal pure {
         require (friSteps[0] == 0, "Only eta0 == 0 is currently supported");
 
         uint256 expectedLogDegBound = logFriLastLayerDegBound;
         uint256 nFriSteps = friSteps.length;
+        
         for (uint256 i = 1; i < nFriSteps; i++) {
             uint256 friStep = friSteps[i];
             require(friStep > 0, "Only the first fri step can be 0");
@@ -72,17 +75,20 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
         // FRI starts with a polynomial of degree 'traceLength'.
         // After applying all the FRI steps we expect to get a polynomial of degree less
         // than friLastLayerDegBound.
-        require (
-            expectedLogDegBound == logTraceLength, "Fri params do not match trace length");
+        require (expectedLogDegBound == logTraceLength, "Fri params do not match trace length");
     }
 
-    function initVerifierParams(uint256[] memory publicInput, uint256[] memory proofParams)
-        internal returns (uint256[] memory ctx) {
+    function initVerifierParams(
+        uint256[] memory publicInput,
+        uint256[] memory proofParams
+    ) internal returns (uint256[] memory ctx) {
         require (proofParams.length > PROOF_PARAMS_FRI_STEPS_OFFSET, "Invalid proofParams.");
+
         require (
-            proofParams.length == (
-                PROOF_PARAMS_FRI_STEPS_OFFSET + proofParams[PROOF_PARAMS_N_FRI_STEPS_OFFSET]),
-            "Invalid proofParams.");
+            proofParams.length == (PROOF_PARAMS_FRI_STEPS_OFFSET + proofParams[PROOF_PARAMS_N_FRI_STEPS_OFFSET]),
+            "Invalid proofParams."
+        );
+            
         uint256 logBlowupFactor = proofParams[PROOF_PARAMS_LOG_BLOWUP_FACTOR_OFFSET];
         require (logBlowupFactor <= 16, "logBlowupFactor must be at most 16");
         require (logBlowupFactor >= 1, "logBlowupFactor must be at least 1");
@@ -92,11 +98,8 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
         require (proofOfWorkBits >= minProofOfWorkBits, "minimum proofOfWorkBits not satisfied");
         require (proofOfWorkBits < numSecurityBits, "Proofs may not be purely based on PoW.");
 
-        uint256 logFriLastLayerDegBound = (
-            proofParams[PROOF_PARAMS_FRI_LAST_LAYER_DEG_BOUND_OFFSET]
-        );
-        require (
-            logFriLastLayerDegBound <= 10, "logFriLastLayerDegBound must be at most 10.");
+        uint256 logFriLastLayerDegBound = proofParams[PROOF_PARAMS_FRI_LAST_LAYER_DEG_BOUND_OFFSET];
+        require (logFriLastLayerDegBound <= 10, "logFriLastLayerDegBound must be at most 10.");
 
         uint256 nFriSteps = proofParams[PROOF_PARAMS_N_FRI_STEPS_OFFSET];
         require (nFriSteps <= 10, "Too many fri steps.");
@@ -113,9 +116,11 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
         validateFriParams(friSteps, logTraceLength, logFriLastLayerDegBound);
 
         uint256 friStepsPtr = getPtr(ctx, MM_FRI_STEPS_PTR);
+
         assembly {
             mstore(friStepsPtr, friSteps)
         }
+        
         ctx[MM_FRI_LAST_LAYER_DEG_BOUND] = 2**logFriLastLayerDegBound;
         ctx[MM_TRACE_LENGTH] = 2 ** logTraceLength;
 
@@ -125,9 +130,11 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
         uint256 nQueries = proofParams[PROOF_PARAMS_N_QUERIES_OFFSET];
         require (nQueries > 0, "Number of queries must be at least one");
         require (nQueries <= MAX_N_QUERIES, "Too many queries.");
+        
         require (
             nQueries * logBlowupFactor + proofOfWorkBits >= numSecurityBits,
-            "Proof params do not satisfy security requirements.");
+            "Proof params do not satisfy security requirements."
+        );
 
         ctx[MM_N_UNIQUE_QUERIES] = nQueries;
 
@@ -141,28 +148,31 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
         ctx[MM_TRACE_GENERATOR] = genTraceDomain;
     }
 
-    function getPublicInputHash(uint256[] memory publicInput) internal pure returns (bytes32);
+    function getPublicInputHash(uint256[] memory publicInput) internal pure virtual returns (bytes32);
 
-    function oodsConsistencyCheck(uint256[] memory ctx) internal;
+    function oodsConsistencyCheck(uint256[] memory ctx) internal virtual;
 
-    function getNColumnsInTrace() internal pure returns(uint256);
+    function getNColumnsInTrace() internal pure virtual returns(uint256);
 
-    function getNColumnsInComposition() internal pure returns(uint256);
+    function getNColumnsInComposition() internal pure virtual returns(uint256);
 
-    function getMmCoefficients() internal pure returns(uint256);
+    function getMmCoefficients() internal pure virtual returns(uint256);
 
-    function getMmOodsValues() internal pure returns(uint256);
+    function getMmOodsValues() internal pure virtual returns(uint256);
 
-    function getMmOodsCoefficients() internal pure returns(uint256);
+    function getMmOodsCoefficients() internal pure virtual returns(uint256);
 
-    function getNCoefficients() internal pure returns(uint256);
+    function getNCoefficients() internal pure virtual returns(uint256);
 
-    function getNOodsValues() internal pure returns(uint256);
+    function getNOodsValues() internal pure virtual returns(uint256);
 
-    function getNOodsCoefficients() internal pure returns(uint256);
+    function getNOodsCoefficients() internal pure virtual returns(uint256);
 
-    function hashRow(uint256[] memory ctx, uint256 offset, uint256 length)
-    internal pure returns (uint256 res) {
+    function hashRow(
+        uint256[] memory ctx,
+        uint256 offset,
+        uint256 length
+    ) internal pure returns (uint256 res) {
         assembly {
             res := keccak256(add(add(ctx, 0x20), offset), length)
         }
@@ -233,10 +243,12 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
                 mstore(add(p, 0x60), base)      // Base.
                 mstore(add(p, 0x80), exponent)  // Exponent.
                 mstore(add(p, 0xa0), modulus)   // Modulus.
+
                 // Call modexp precompile.
                 if iszero(call(not(0), 0x05, 0, p, 0xc0, p, 0x20)) {
                     revert(0, 0)
                 }
+
                 res := mload(p)
             }
 
@@ -252,14 +264,18 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
                 mstore(evalPointsPtr, expmod(evalDomainGenerator,
                                              bitReverse(queryIdx, log_evalDomainSize),
                                              PRIME))
+                
                 evalPointsPtr := add(evalPointsPtr, 0x20)
             }
         }
     }
 
     function readQueryResponsesAndDecommit(
-        uint256[] memory ctx, uint256 nColumns, uint256 proofDataPtr, bytes32 merkleRoot)
-         internal view {
+        uint256[] memory ctx,
+        uint256 nColumns,
+        uint256 proofDataPtr,
+        bytes32 merkleRoot
+    ) internal pure {
         require(nColumns <= getNColumnsInTrace() + getNColumnsInComposition(), "Too many columns.");
 
         uint256 nUniqueQueries = ctx[MM_N_UNIQUE_QUERIES];
@@ -276,6 +292,7 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
 
             for {} lt(friQueue, friQueueEnd) {friQueue := add(friQueue, 0x60)} {
                 let merkleLeaf := and(keccak256(proofPtr, rowSize), lhashMask)
+                
                 if eq(rowSize, 0x20) {
                     // If a leaf contains only 1 field element we don't hash it.
                     merkleLeaf := mload(proofPtr)
@@ -329,13 +346,13 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
         address oodsAddress = oodsContractAddress;
         uint256 friQueue = getPtr(ctx, MM_FRI_QUEUE);
         uint256 returnDataSize = MAX_N_QUERIES * 0x60;
+        
         assembly {
             // Call the OODS contract.
-            if iszero(staticcall(not(0), oodsAddress, ctx,
-                                 /*sizeof(ctx)*/ mul(add(mload(ctx), 1), 0x20),
-                                 friQueue, returnDataSize)) {
-              returndatacopy(0, 0, returndatasize)
-              revert(0, returndatasize)
+            // mul(add(mload(ctx), 1), 0x20) is sizeof(ctx)
+            if iszero(staticcall(not(0), oodsAddress, ctx, mul(add(mload(ctx), 1), 0x20), friQueue, returnDataSize)) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
         // emit LogGas("OODS virtual oracle", gasleft());
@@ -351,9 +368,7 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
       -- The coefficients are not actually read and copied elsewhere, but rather only a pointer to
          their location in the channel is stored.
     */
-    function readLastFriLayer(uint256[] memory ctx)
-        internal pure
-    {
+    function readLastFriLayer(uint256[] memory ctx) internal pure {
         uint256 lmmChannel = MM_CHANNEL;
         uint256 friLastLayerDegBound = ctx[MM_FRI_LAST_LAYER_DEG_BOUND];
         uint256 lastLayerPtr;
@@ -395,8 +410,10 @@ contract StarkVerifier is MemoryMap, MemoryAccessUtils, VerifierChannel, IStarkV
     }
 
     function verifyProof(
-        uint256[] memory proofParams, uint256[] memory proof, uint256[] memory publicInput)
-        internal {
+        uint256[] memory proofParams,
+        uint256[] memory proof,
+        uint256[] memory publicInput
+    ) internal {
         // emit LogGas("Transmission", gasleft());
         uint256[] memory ctx = initVerifierParams(publicInput, proofParams);
         uint256 channelPtr = getChannelPtr(ctx);

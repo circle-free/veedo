@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./MerkleVerifier.sol";
 import "./PrimeFieldElement6.sol";
@@ -22,8 +24,7 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
     uint256 constant internal FRI_MAX_FRI_STEP = 4;
     uint256 constant internal MAX_COSET_SIZE = 2**FRI_MAX_FRI_STEP;
     // Generator of the group of size MAX_COSET_SIZE: GENERATOR_VAL**((PRIME - 1)/MAX_COSET_SIZE).
-    uint256 constant internal FRI_GROUP_GEN =
-    0x1388a7fd3b4b9599dc4b0691d6a5fcba;
+    uint256 constant internal FRI_GROUP_GEN = 0x1388a7fd3b4b9599dc4b0691d6a5fcba;
 
     uint256 constant internal FRI_GROUP_SIZE = 0x20 * MAX_COSET_SIZE;
     uint256 constant internal FRI_CTX_TO_COSET_EVALUATIONS_OFFSET = 0;
@@ -35,10 +36,11 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
     FRI_CTX_TO_FRI_HALF_INV_GROUP_OFFSET + (FRI_GROUP_SIZE / 2);
 
     function nextLayerElementFromTwoPreviousLayerElements(
-        uint256 fX, uint256 fMinusX, uint256 evalPoint, uint256 xInv)
-        internal pure
-        returns (uint256 res)
-    {
+        uint256 fX,
+        uint256 fMinusX,
+        uint256 evalPoint,
+        uint256 xInv
+    ) internal pure returns (uint256 res) {
         // Folding formula:
         // f(x)  = g(x^2) + xh(x^2)
         // f(-x) = g((-x)^2) - xh((-x)^2) = g(x^2) - xh(x^2)
@@ -73,9 +75,11 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
       The basic FRI transformation is described in nextLayerElementFromTwoPreviousLayerElements().
     */
     function do2FriSteps(
-        uint256 friHalfInvGroupPtr, uint256 evaluationsOnCosetPtr, uint256 cosetOffset_,
-        uint256 friEvalPoint)
-    internal pure returns (uint256 nextLayerValue, uint256 nextXInv) {
+        uint256 friHalfInvGroupPtr,
+        uint256 evaluationsOnCosetPtr,
+        uint256 cosetOffset_,
+        uint256 friEvalPoint
+    ) internal pure returns (uint256 nextLayerValue, uint256 nextXInv) {
         assembly {
             let PRIME := 0x30000003000000010000000000000001
             let friEvalPointDivByX := mulmod(friEvalPoint, cosetOffset_, PRIME)
@@ -123,9 +127,11 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
       See do2FriSteps for more detailed explanation.
     */
     function do3FriSteps(
-        uint256 friHalfInvGroupPtr, uint256 evaluationsOnCosetPtr, uint256 cosetOffset_,
-        uint256 friEvalPoint)
-    internal pure returns (uint256 nextLayerValue, uint256 nextXInv) {
+        uint256 friHalfInvGroupPtr,
+        uint256 evaluationsOnCosetPtr,
+        uint256 cosetOffset_,
+        uint256 friEvalPoint
+    ) internal pure returns (uint256 nextLayerValue, uint256 nextXInv) {
         assembly {
             let PRIME := 0x30000003000000010000000000000001
             let MPRIME := 0x300000030000000100000000000000010
@@ -223,9 +229,11 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
       See do2FriSteps for more detailed explanation.
     */
     function do4FriSteps(
-        uint256 friHalfInvGroupPtr, uint256 evaluationsOnCosetPtr, uint256 cosetOffset_,
-        uint256 friEvalPoint)
-    internal pure returns (uint256 nextLayerValue, uint256 nextXInv) {
+        uint256 friHalfInvGroupPtr,
+        uint256 evaluationsOnCosetPtr,
+        uint256 cosetOffset_,
+        uint256 friEvalPoint
+    ) internal pure returns (uint256 nextLayerValue, uint256 nextXInv) {
         assembly {
             let friEvalPointDivByXTessed
             let PRIME := 0x30000003000000010000000000000001
@@ -410,9 +418,11 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
         cosetOffset_ - the xInv field element that corresponds to cosetIdx.
     */
     function gatherCosetInputs(
-        uint256 channelPtr, uint256 friCtx, uint256 friQueueHead_, uint256 cosetSize)
-        internal pure returns (uint256 friQueueHead, uint256 cosetIdx, uint256 cosetOffset_) {
-
+        uint256 channelPtr,
+        uint256 friCtx,
+        uint256 friQueueHead_,
+        uint256 cosetSize
+    ) internal pure returns (uint256 friQueueHead, uint256 cosetIdx, uint256 cosetOffset_) {
         uint256 evaluationsOnCosetPtr = friCtx + FRI_CTX_TO_COSET_EVALUATIONS_OFFSET;
         uint256 friGroupPtr = friCtx + FRI_CTX_TO_FRI_GROUP_OFFSET;
 
@@ -477,17 +487,20 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
       For example, if we have numberOfBits = 6 and num = (0b)1101 == (0b)001101,
       the function will return (0b)101100.
     */
-    function bitReverse(uint256 num, uint256 numberOfBits)
-    internal pure
-        returns(uint256 numReversed)
-    {
+    function bitReverse(
+        uint256 num,
+        uint256 numberOfBits
+    ) internal pure  returns(uint256 numReversed) {
         assert((numberOfBits == 256) || (num < 2 ** numberOfBits));
+
         uint256 n = num;
         uint256 r = 0;
+
         for (uint256 k = 0; k < numberOfBits; k++) {
             r = (r * 2) | (n % 2);
             n = n / 2;
         }
+
         return r;
     }
 
@@ -507,6 +520,7 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
         uint256 lastVal = ONE_VAL;
         uint256 lastValInv = ONE_VAL;
         uint256 prime = PrimeFieldElement6.K_MODULUS;
+
         assembly {
             // ctx[mmHalfFriInvGroup + 0] = ONE_VAL;
             mstore(friHalfInvGroupPtr, lastValInv)
@@ -519,6 +533,7 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
         // To compute [1, -1 (== g^n/2), g^n/4, -g^n/4, ...]
         // we compute half the elements and derive the rest using negation.
         uint256 halfCosetSize = MAX_COSET_SIZE / 2;
+    
         for (uint256 i = 1; i < halfCosetSize; i++) {
             lastVal = fmul(lastVal, genFriGroup);
             lastValInv = fmul(lastValInv, genFriGroupInv);
@@ -547,9 +562,14 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
       Since the function reads from the queue it returns an updated head pointer.
     */
     function doFriSteps(
-        uint256 friCtx, uint256 friQueueTail, uint256 cosetOffset_, uint256 friEvalPoint,
-        uint256 friCosetSize, uint256 index, uint256 merkleQueuePtr)
-        internal pure {
+        uint256 friCtx,
+        uint256 friQueueTail,
+        uint256 cosetOffset_,
+        uint256 friEvalPoint,
+        uint256 friCosetSize,
+        uint256 index,
+        uint256 merkleQueuePtr
+    ) internal pure {
         uint256 friValue;
 
         uint256 evaluationsOnCosetPtr = friCtx + FRI_CTX_TO_COSET_EVALUATIONS_OFFSET;
@@ -558,18 +578,22 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
         // Compare to expected FRI step sizes in order of likelihood, step size 3 being most common.
         if (friCosetSize == 8) {
             (friValue, cosetOffset_) = do3FriSteps(
-                friHalfInvGroupPtr, evaluationsOnCosetPtr, cosetOffset_, friEvalPoint);
+                friHalfInvGroupPtr, evaluationsOnCosetPtr, cosetOffset_, friEvalPoint
+            );
         } else if (friCosetSize == 4) {
             (friValue, cosetOffset_) = do2FriSteps(
-                friHalfInvGroupPtr, evaluationsOnCosetPtr, cosetOffset_, friEvalPoint);
+                friHalfInvGroupPtr, evaluationsOnCosetPtr, cosetOffset_, friEvalPoint
+            );
         } else if (friCosetSize == 16) {
             (friValue, cosetOffset_) = do4FriSteps(
-                friHalfInvGroupPtr, evaluationsOnCosetPtr, cosetOffset_, friEvalPoint);
+                friHalfInvGroupPtr, evaluationsOnCosetPtr, cosetOffset_, friEvalPoint
+            );
         } else {
             require(false, "Only step sizes of 2, 3 or 4 are supported.");
         }
 
         uint256 lhashMask = getHashMask();
+
         assembly {
             let indexInNextStep := div(index, friCosetSize)
             mstore(merkleQueuePtr, indexInNextStep)
@@ -597,9 +621,14 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
       the previous layer for Merkle verification.
     */
     function computeNextLayer(
-        uint256 channelPtr, uint256 friQueuePtr, uint256 merkleQueuePtr, uint256 nQueries,
-        uint256 friEvalPoint, uint256 friCosetSize, uint256 friCtx)
-        internal pure returns (uint256 nLiveQueries) {
+        uint256 channelPtr,
+        uint256 friQueuePtr,
+        uint256 merkleQueuePtr,
+        uint256 nQueries,
+        uint256 friEvalPoint,
+        uint256 friCosetSize,
+        uint256 friCtx
+    ) internal pure returns (uint256 nLiveQueries) {
         uint256 merkleQueueTail = merkleQueuePtr;
         uint256 friQueueHead = friQueuePtr;
         uint256 friQueueTail = friQueuePtr;
@@ -608,17 +637,19 @@ contract FriLayer is MerkleVerifier, PrimeFieldElement6 {
         do {
             uint256 cosetOffset;
             uint256 index;
+
             (friQueueHead, index, cosetOffset) = gatherCosetInputs(
-                channelPtr, friCtx, friQueueHead, friCosetSize);
+                channelPtr, friCtx, friQueueHead, friCosetSize
+            );
 
             doFriSteps(
-                friCtx, friQueueTail, cosetOffset, friEvalPoint, friCosetSize, index,
-                merkleQueueTail);
+                friCtx, friQueueTail, cosetOffset, friEvalPoint, friCosetSize, index, merkleQueueTail
+            );
 
             merkleQueueTail += 0x40;
             friQueueTail += 0x60;
         } while (friQueueHead < friQueueEnd);
+
         return (friQueueTail - friQueuePtr) / 0x60;
     }
-
 }

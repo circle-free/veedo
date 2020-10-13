@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 
 contract PrimeFieldElement6 {
@@ -73,10 +75,11 @@ contract PrimeFieldElement6 {
         return expmod(val, exp, K_MODULUS);
     }
 
-    function expmod(uint256 base, uint256 exponent, uint256 modulus)
-        internal
-        returns (uint256 res)
-    {
+    function expmod(
+        uint256 base,
+        uint256 exponent,
+        uint256 modulus
+    ) internal returns (uint256 res) {
         assembly {
             let p := mload(0x40)
             mstore(p, 0x20) // Length of Base.

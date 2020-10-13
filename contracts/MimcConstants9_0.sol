@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 contract MimcConstants9_0 {
     function compute(uint256 x) external pure returns(uint256 result) {

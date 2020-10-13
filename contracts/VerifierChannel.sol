@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./Prng.sol";
 
@@ -10,7 +12,7 @@ contract VerifierChannel is Prng {
         [1] prng digest.
         [2] prng counter.
     */
-    uint256 constant internal CHANNEL_STATE_SIZE = 3;
+    // uint256 constant internal CHANNEL_STATE_SIZE = 3;
 
     event LogValue(bytes32 val);
 
@@ -74,7 +76,7 @@ contract VerifierChannel is Prng {
       Generates count queries in the range [0, mask] and returns the number of unique queries.
       Note that mask is of the form 2^k-1 (for some k).
 
-      Note that queriesOutPtr may be (and is) inteleaved with other arrays. The stride parameter
+      Note that queriesOutPtr may be (and is) interleaved with other arrays. The stride parameter
       is passed to indicate the distance between every two entries to the queries array, i.e.
       stride = 0x20*(number of interleaved arrays).
     */

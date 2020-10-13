@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./MemoryMap.sol";
 import "./MemoryAccessUtils.sol";
@@ -10,7 +12,7 @@ import "./HornerEvaluator.sol";
   by evaluating the fully committed polynomial, and requires specific handling.
 */
 contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
-    event LogGas(string name, uint256 val);
+    // event LogGas(string name, uint256 val);
 
     function verifyLastLayer(uint256[] memory ctx, uint256 nPoints)
         internal {
@@ -40,15 +42,14 @@ contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
             ctx[mmFriQueue + 3*i + 2] = inverse(
                 fpow(layerGenerator,  bitReverse(ctx[mmFriQueue + 3*i], logLayerSize)).
     */
-    function friVerifyLayers(
-        uint256[] memory ctx)
-        internal
-    {
-
+    function friVerifyLayers(uint256[] memory ctx) internal {
         uint256 friCtx = getPtr(ctx, MM_FRI_CTX);
+
         require(
             MAX_SUPPORTED_MAX_FRI_STEP == FRI_MAX_FRI_STEP,
-            "Incosistent MAX_FRI_STEP between MemoryMap.sol and FriLayer.sol");
+            "Inconsistent MAX_FRI_STEP between MemoryMap.sol and FriLayer.sol"
+        );
+
         initFriGroups(friCtx);
         // emit LogGas("FRI offset precomputation", gasleft());
         uint256 channelPtr = getChannelPtr(ctx);
@@ -57,7 +58,7 @@ contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
         uint256 friStep = 1;
         uint256 nLiveQueries = ctx[MM_N_UNIQUE_QUERIES];
 
-        // Add 0 at the end of the queries array to avoid empty array check in readNextElment.
+        // Add 0 at the end of the queries array to avoid empty array check in readNextElement.
         ctx[MM_FRI_QUERIES_DELIMITER] = 0;
 
         // Rather than converting all the values from Montgomery to standard form,
@@ -74,6 +75,7 @@ contract Fri is MemoryMap, MemoryAccessUtils, HornerEvaluator, FriLayer {
 
         uint256[] memory friSteps = getFriSteps(ctx);
         uint256 nFriSteps = friSteps.length;
+        
         while (friStep < nFriSteps) {
             uint256 friCosetSize = 2**friSteps[friStep];
 

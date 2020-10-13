@@ -1,0 +1,15 @@
+{
+  "name": "veedo",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/circle-free/veedo.git",
+  "author": "StarkWare Industries Ltd",
+  "license": "Apache License, Version 2.0",
+  "private": false,
+  "devDependencies": {
+    "prettier": "^2.1.2",
+    "prettier-plugin-solidity": "^1.0.0-alpha.59",
+    "solhint": "^3.2.1",
+    "truffle": "^5.1.48"
+  }
+}

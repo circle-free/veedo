@@ -1,4 +1,6 @@
-pragma solidity ^0.5.2;
+// SPDX-License-Identifier: Apache-2.0
+
+pragma solidity <=0.7.3;
 
 import "./StarkVerifier.sol";
 import "./StarkParameters.sol";
@@ -7,12 +9,11 @@ import "./MimcOods.sol";
 import "./PublicInputOffsets.sol";
 import "./FactRegistry.sol";
 
-contract PeriodicColumnContract {
-    function compute(uint256 x) external pure returns (uint256 result);
+abstract contract PeriodicColumnContract {
+    function compute(uint256 x) external pure virtual returns (uint256 result);
 }
 
-contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInputOffsets{
-
+contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInputOffsets {
     MimcConstraintPoly constraintPoly;
     PeriodicColumnContract[20] constantsCols;
     uint256 internal constant PUBLIC_INPUT_SIZE = 5;
@@ -21,27 +22,32 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         address[] memory auxPolynomials,
         MimcOods oodsContract,
         uint256 numSecurityBits_,
-        uint256 minProofOfWorkBits_)
-        StarkVerifier(
-            numSecurityBits_,
-            minProofOfWorkBits_
-        )
-        public {
+        uint256 minProofOfWorkBits_
+    ) StarkVerifier(numSecurityBits_, minProofOfWorkBits_) {
         constraintPoly = MimcConstraintPoly(auxPolynomials[0]);
+
         for (uint256 i = 0; i < 20; i++) {
             constantsCols[i] = PeriodicColumnContract(auxPolynomials[i+1]);
         }
+
         oodsContractAddress = address(oodsContract);
+    }
+
+    function verifyProofWithoutRegistering(
+        uint256[] calldata proofParams,
+        uint256[] calldata proof,
+        uint256[] calldata publicInput
+    ) external {
+        verifyProof(proofParams, proof, publicInput);
     }
 
     function verifyProofAndRegister(
         uint256[] calldata proofParams,
         uint256[] calldata proof,
         uint256[] calldata publicInput
-    )
-        external
-    {
+    ) external {
         verifyProof(proofParams, proof, publicInput);
+        
         registerFact(
             keccak256(
                 abi.encodePacked(
@@ -55,44 +61,43 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         );
     }
 
-    function getNColumnsInTrace() internal pure returns (uint256) {
+    function getNColumnsInTrace() internal pure override returns (uint256) {
         return N_COLUMNS_IN_MASK;
     }
 
-    function getNColumnsInComposition() internal pure returns (uint256) {
+    function getNColumnsInComposition() internal pure override returns (uint256) {
         return CONSTRAINTS_DEGREE_BOUND;
     }
 
-    function getMmCoefficients() internal pure returns (uint256) {
+    function getMmCoefficients() internal pure override returns (uint256) {
         return MM_COEFFICIENTS;
     }
 
-    function getMmOodsValues() internal pure returns (uint256) {
+    function getMmOodsValues() internal pure override returns (uint256) {
         return MM_OODS_VALUES;
     }
 
-    function getMmOodsCoefficients() internal pure returns (uint256) {
+    function getMmOodsCoefficients() internal pure override returns (uint256) {
         return MM_OODS_COEFFICIENTS;
     }
 
-    function getNCoefficients() internal pure returns (uint256) {
+    function getNCoefficients() internal pure override returns (uint256) {
         return N_COEFFICIENTS;
     }
 
-    function getNOodsValues() internal pure returns (uint256) {
+    function getNOodsValues() internal pure override returns (uint256) {
         return N_OODS_VALUES;
     }
 
-    function getNOodsCoefficients() internal pure returns (uint256) {
+    function getNOodsCoefficients() internal pure override returns (uint256) {
         return N_OODS_COEFFICIENTS;
     }
 
-    function airSpecificInit(uint256[] memory publicInput)
-        internal returns (uint256[] memory ctx, uint256 logTraceLength)
-    {
-        require(publicInput.length == PUBLIC_INPUT_SIZE,
-            "INVALID_PUBLIC_INPUT_LENGTH"
-        );
+    function airSpecificInit(
+        uint256[] memory publicInput
+    ) internal pure override returns (uint256[] memory ctx, uint256 logTraceLength) {
+        require(publicInput.length == PUBLIC_INPUT_SIZE, "INVALID_PUBLIC_INPUT_LENGTH");
+
         ctx = new uint256[](MM_CONTEXT_SIZE);
 
         // Note that the prover does the VDF computation the other way around (uses the inverse
@@ -113,9 +118,7 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         require(logTraceLength <= 50, "logTraceLength must not exceed 50.");
     }
 
-    function getPublicInputHash(uint256[] memory publicInput)
-        internal pure
-        returns (bytes32) {
+    function getPublicInputHash(uint256[] memory publicInput) internal pure override returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 uint64(2 ** publicInput[OFFSET_LOG_TRACE_LENGTH]),
@@ -133,8 +136,7 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
       Later, we use boundary constraints to check that those evaluations are actually
       consistent with the committed trace and composition polynomials.
     */
-    function oodsConsistencyCheck(uint256[] memory ctx)
-        internal {
+    function oodsConsistencyCheck(uint256[] memory ctx) internal override {
         uint256 oodsPoint = ctx[MM_OODS_POINT];
         uint256 nRows = 256;
         uint256 zPointPow = fpow(oodsPoint, ctx[MM_TRACE_LENGTH] / nRows);
@@ -165,13 +167,16 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
         address lconstraintPoly = address(constraintPoly);
         uint256 offset = 0x20 * (1 + MM_CONSTRAINT_POLY_ARGS_START);
         uint256 size = 0x20 * (MM_CONSTRAINT_POLY_ARGS_END - MM_CONSTRAINT_POLY_ARGS_START);
+
         assembly {
             // Call MimcConstraintPoly contract.
             let p := mload(0x40)
+
             if iszero(staticcall(not(0), lconstraintPoly, add(ctx, offset), size, p, 0x20)) {
-              returndatacopy(0, 0, returndatasize)
-              revert(0, returndatasize)
+              returndatacopy(0, 0, returndatasize())
+              revert(0, returndatasize())
             }
+
             compositionFromTraceValue := mload(p)
         }
 
@@ -181,6 +186,7 @@ contract MimcVerifier is StarkParameters, StarkVerifier, FactRegistry, PublicInp
 
         require(
             compositionFromTraceValue == claimedComposition,
-            "claimedComposition does not match trace");
+            "claimedComposition does not match trace"
+        );
     }
 }
