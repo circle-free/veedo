@@ -32,6 +32,7 @@
     "lconstraint",
     "lhash",
     "merkle",
+    "mixedcase",
     "mload",
     "modexp",
     "mstore",
